@@ -94,15 +94,16 @@ alias_group_default_keys()
 alias_group_parse_header()
 {
     local file="$1" line rest
+    local comment_re='^[[:space:]]*#(.*)$'
     _ag_header_group=""
     _ag_header_keys=""
     while IFS= read -r line || [ -n "$line" ]; do
         [ -z "${line//[[:space:]]/}" ] && continue
-        case "$line" in
-            \#*) ;;
-            *) break ;;
-        esac
-        rest="${line#\#}"
+        if [[ "$line" =~ $comment_re ]]; then
+            rest="${BASH_REMATCH[1]}"
+        else
+            break
+        fi
         rest="${rest#"${rest%%[![:space:]]*}"}"
         case "$rest" in
             @group:*)
@@ -127,9 +128,10 @@ alias_group_parse_header()
 alias_group_parse_members()
 {
     local file="$1" line name result=""
+    local alias_re='^[[:space:]]*alias[[:space:]]+([A-Za-z0-9_-]+)='
     while IFS= read -r line || [ -n "$line" ]; do
-        name=$(printf '%s\n' "$line" | sed -E -n 's/^[[:space:]]*alias[[:space:]]+([A-Za-z0-9_-]+)=.*/\1/p')
-        if [ -n "$name" ]; then
+        if [[ "$line" =~ $alias_re ]]; then
+            name="${BASH_REMATCH[1]}"
             result="${result:+$result }$name"
         fi
     done < "$file"
@@ -142,27 +144,26 @@ alias_group_parse_members()
 alias_group_parse_hints()
 {
     local file="$1" line hint="" name out="" rest
+    local comment_re='^[[:space:]]*#(.*)$'
+    local alias_re='^[[:space:]]*alias[[:space:]]+([A-Za-z0-9_-]+)='
     while IFS= read -r line || [ -n "$line" ]; do
-        case "$line" in
-            \#*)
-                rest="${line#\#}"
-                rest="${rest#"${rest%%[![:space:]]*}"}"
-                case "$rest" in
-                    @hint|@hint[[:space:]]*)
-                        hint="${rest#@hint}"
-                        hint="${hint#"${hint%%[![:space:]]*}"}"
-                        hint="${hint%"${hint##*[![:space:]]}"}"
-                        ;;
-                esac
-                ;;
-            *)
-                name=$(printf '%s\n' "$line" | sed -E -n 's/^[[:space:]]*alias[[:space:]]+([A-Za-z0-9_-]+)=.*/\1/p')
-                if [ -n "$name" ] && [ -n "$hint" ]; then
-                    out="${out}${out:+$'\n'}$name$(printf '\t')$hint"
-                    hint=""
-                fi
-                ;;
-        esac
+        if [[ "$line" =~ $comment_re ]]; then
+            rest="${BASH_REMATCH[1]}"
+            rest="${rest#"${rest%%[![:space:]]*}"}"
+            case "$rest" in
+                @hint|@hint[[:space:]]*)
+                    hint="${rest#@hint}"
+                    hint="${hint#"${hint%%[![:space:]]*}"}"
+                    hint="${hint%"${hint##*[![:space:]]}"}"
+                    ;;
+            esac
+        elif [[ "$line" =~ $alias_re ]]; then
+            name="${BASH_REMATCH[1]}"
+            if [ -n "$hint" ]; then
+                out="${out}${out:+$'\n'}$name$(printf '\t')$hint"
+                hint=""
+            fi
+        fi
     done < "$file"
     printf '%s\n' "$out"
 }

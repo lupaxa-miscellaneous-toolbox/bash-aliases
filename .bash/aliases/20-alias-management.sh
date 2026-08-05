@@ -9,7 +9,7 @@
 #     • List all loaded aliases in a readable, grouped table.
 #     • Show available alias groups and their filter tokens.
 #     • Delete an alias interactively for the current session.
-#     • Verify that your configured groups (in 00-config.sh) reference valid aliases.
+#     • Verify that file-derived alias groups reference valid aliases.
 #
 # Conventions:
 #   - Wrapper functions have underscored names (POSIX-compatible).
@@ -24,6 +24,7 @@
 #   list-aliases                 # Show all aliases grouped by category
 #   list-aliases git             # Show only Git-related aliases
 #   list-alias-groups            # Display available groups
+#   reload-aliases               # Reload aliases and rebuild the registry
 #   delete-alias list-aliases    # Remove a specific alias for this session
 #   check-alias-groups           # Validate group-to-alias consistency
 ###############################################################################
@@ -50,6 +51,11 @@ alias list-aliases='list_aliases_wrapper'
 alias list-alias-groups='list_alias_groups_wrapper'
 
 # -----------------------------------------------------------------------------
+# reload-aliases — Reload aliases and rebuild the file-derived registry
+# -----------------------------------------------------------------------------
+alias reload-aliases='source ~/.bash_aliases && echo "🔁 Aliases reloaded."'
+
+# -----------------------------------------------------------------------------
 # delete-alias — Delete an alias for the current shell session
 # Wrapper: delete_alias_wrapper()
 # Description:
@@ -63,9 +69,8 @@ alias delete-alias='delete_alias_wrapper'
 # check-alias-groups — Validate that all configured group members exist
 # Wrapper: check_alias_groups_wrapper()
 # Description:
-#   Cross-checks group membership lists from 00-config.sh against the aliases
-#   actually loaded into the current session. Warns if any are missing or
-#   misnamed.
+#   Cross-checks members discovered from alias group files against the aliases
+#   actually loaded into the current session. Warns if any are missing.
 # -----------------------------------------------------------------------------
 alias check-alias-groups='check_alias_groups_wrapper'
 

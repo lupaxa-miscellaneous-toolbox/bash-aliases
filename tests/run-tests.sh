@@ -13,6 +13,7 @@ FAIL=0
 test_default_name_from_filename
 test_default_keys_from_filename
 test_header_overrides
+test_indented_directives
 test_header_rejects_inline_directives
 test_hints_reject_inline_directives
 test_hints_reject_false_prefix_matches

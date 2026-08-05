@@ -38,6 +38,26 @@ test_header_overrides() {
     assert_eq "header keys" "alias,aliases,management" "$_ag_header_keys"
 }
 
+test_indented_directives() {
+    echo "test_indented_directives"
+    local f
+    f="$(mktemp "${TMPDIR:-/tmp}/alias-group-indented.XXXXXX")"
+    cat > "$f" <<'EOF'
+    # @group: Indented group
+	# @keys: indented,spaces
+    # @hint <value>
+    alias indented-alias='printf "%s\n"'
+EOF
+    _ag_header_group=""
+    _ag_header_keys=""
+    alias_group_parse_header "$f"
+    assert_eq "indented header group" "Indented group" "$_ag_header_group"
+    assert_eq "indented header keys" "indented,spaces" "$_ag_header_keys"
+    assert_eq "indented alias member" "indented-alias" "$(alias_group_parse_members "$f")"
+    assert_eq "indented hint" "indented-alias	<value>" "$(alias_group_parse_hints "$f")"
+    rm -f "$f"
+}
+
 test_header_rejects_inline_directives() {
     echo "test_header_rejects_inline_directives"
     local f

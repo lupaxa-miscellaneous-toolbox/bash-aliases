@@ -20,7 +20,7 @@
 #
 # Dependencies:
 #   - Requires 10-functions.sh for the wrapper implementations.
-#   - Requires 00-config.sh to include these aliases in the “Git” group.
+#   - Registry metadata below identifies this file as the “Git” group.
 #
 # Example usage:
 #   push-all "Fix broken deployment"    # Stage, commit, and confirm push
