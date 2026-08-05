@@ -50,7 +50,7 @@ delete-alias dfh                     # interactive: session vs file
 ```
 
 Hand-editing group files (`30-git-aliases.sh`, `40-system.sh`, …) still works;
-run `reload-aliases` afterwards. Full docs live under [`mkdocs/`](mkdocs/).
+run `reload-aliases` afterwards.
 
 ## Group layout
 
@@ -70,12 +70,6 @@ python -m pip install -r requirements.txt
 bash tests/run-tests.sh
 make mkdocs-serve
 ```
-
-Community standards: [`docs/`](docs/). Site pages: [`mkdocs/`](mkdocs/).
-
-## Licence
-
-MIT — see [`LICENCE`](LICENCE).
 
 <a href="https://github.com/the-lupaxa-project">
   <img src="https://raw.githubusercontent.com/the-lupaxa-project/brand-assets/master/logos/components/footer-for-child-orgs.svg" alt="The Lupaxa Project Footer" width="100%" />
