@@ -1,108 +1,243 @@
 ###############################################################################
-# 00-config.sh — Alias Group Configuration & Helpers
+# 00-config.sh — Alias group registry helpers
 #
 # Purpose:
-#   Centralize alias grouping and lookup logic for your modular alias system.
-#   - Define which aliases belong to which groups (e.g., “Git”, “Alias management”).
-#   - Provide helper functions that:
-#       • map user-friendly group filter tokens to canonical group names,
-#       • return the members of a given group,
-#       • classify an alias into a group (with “Other” as the default fallback).
+#   Derive alias groups from 20-99 *.sh files (one file = one group). Each
+#   group file may declare optional header tags (# @group:, # @keys:) and
+#   per-alias hints (# @hint). This file builds parallel-array registries and
+#   provides lookup helpers — no GROUP_* membership lists or aliases here.
 #
 # How this fits in:
-#   - Loaded by ~/.bash_aliases (or your loader) *before* functions and public aliases.
-#   - list_aliases_wrapper (in 10-functions.sh) relies on:
-#       • ALIAS_GROUP_ORDER
-#       • group_keys()
-#       • group_members()
-#       • resolve_group_name()
-#       • classify_group()
+#   - Loaded by ~/.bash_aliases (or your loader) before functions and aliases.
+#   - Call build_alias_group_registry <aliases-dir> after sourcing group files
+#     or before listing/classifying (loader wiring is handled elsewhere).
+#   - list_aliases_wrapper (10-functions.sh) uses:
+#       • ALIAS_GROUP_ORDER, ALIAS_GROUP_KEYS, ALIAS_GROUP_MEMBERS, ALIAS_GROUP_FILES
+#       • group_keys(), group_members(), resolve_group_name(), classify_group()
+#       • alias_hint_for()
 #
 # Conventions:
-#   - Public, hyphenated commands (e.g., `list-aliases`) are defined in 20-*.sh files.
-#   - This file only provides configuration and small utilities—no aliases here.
-#   - Group names can contain spaces. Order is controlled by ALIAS_GROUP_ORDER (Bash array).
-#
-# Notes:
-#   - “Other” is the fallback group for any alias not explicitly listed in a group.
-#   - When adding groups:
-#       1) Add a GROUP_<NAME> variable listing its alias names (space-separated).
-#       2) Add the canonical group name to ALIAS_GROUP_ORDER.
-#       3) Teach group_keys() and group_members() about the group.
+#   - Group files: NN-<slug>.sh where NN is 20-99 (sorted lexicographically).
+#   - Default display name / keys derive from the filename slug.
+#   - Header tags at the top of a file override defaults.
 ###############################################################################
 
-# -----------------------------------------------------------------------------
-# Group membership lists (space-separated alias names)
-#   • Add/remove alias names as needed. Names must match the *public* alias
-#     names declared in your 20-*.sh files (e.g., alias gc='git clone').
-# -----------------------------------------------------------------------------
-GROUP_ALIAS_MANAGEMENT="list-aliases list-alias-groups reload-aliases delete-alias check-alias-groups"
-GROUP_GIT="gc gs gl gd gca gp gpl gpf gb gco ga push-all tag-push undo-last-commit gaa gfu"
-GROUP_OTHER="la ll mkcd"
+# Globals populated by build_alias_group_registry
+ALIAS_GROUP_ORDER=()
+ALIAS_GROUP_KEYS=()
+ALIAS_GROUP_MEMBERS=()
+ALIAS_GROUP_FILES=()
+ALIAS_HINT_LINES=""
+
+# Set by alias_group_parse_header
+_ag_header_group=""
+_ag_header_keys=""
 
 # -----------------------------------------------------------------------------
-# Display order for groups (array preserves names with spaces)
-#   • Controls the order groups appear in list outputs.
-#   • Add new canonical group names here when you create them.
+# _alias_group_slug_from_filename — Strip prefix/suffix from a group filename.
 # -----------------------------------------------------------------------------
-ALIAS_GROUP_ORDER=("Alias management" "Git" "Other")
-
-# -----------------------------------------------------------------------------
-# group_keys — Return accepted filter tokens for a canonical group name.
-# Usage:
-#   group_keys "Git"                 # -> "git"
-#   group_keys "Alias management"    # -> "alias,aliases,management"
-# Behavior:
-#   • Returns a comma-separated, lowercase list of tokens that users can pass
-#     to `list-aliases <token>` to filter by this group.
-# -----------------------------------------------------------------------------
-group_keys()
+_alias_group_slug_from_filename()
 {
-    case "$1" in
-        "Alias management") echo "alias,aliases,management" ;;
-        "Git")              echo "git" ;;
-        "Other")            echo "other,misc,miscellaneous" ;;
+    local filename="$1" base
+    base="${filename%.sh}"
+    case "$base" in
+        ??-*) base="${base#??-}" ;;
     esac
+    case "$base" in
+        *-aliases) base="${base%-aliases}" ;;
+    esac
+    printf '%s\n' "$base"
 }
 
 # -----------------------------------------------------------------------------
-# group_members — Return space-separated alias names for a canonical group.
-# Usage:
-#   group_members "Git"              # -> "gc gs gl ... undo-last-commit"
-# Behavior:
-#   • Maps a canonical group name to its configured alias member list.
-#   • “Other” returns empty here because it is a *fallback* bucket only.
+# _alias_group_titlecase_slug — Hyphenated slug → title-cased words.
+# -----------------------------------------------------------------------------
+_alias_group_titlecase_slug()
+{
+    local slug="$1" word first rest result="" old_ifs="$IFS"
+    IFS='-'
+    set -- $slug
+    IFS="$old_ifs"
+    for word; do
+        [ -n "$word" ] || continue
+        first=$(printf '%s' "${word:0:1}" | tr '[:lower:]' '[:upper:]')
+        rest=$(printf '%s' "${word:1}" | tr '[:upper:]' '[:lower:]')
+        result="${result:+$result }${first}${rest}"
+    done
+    printf '%s\n' "$result"
+}
+
+# -----------------------------------------------------------------------------
+# alias_group_default_name — Display name from filename.
+# -----------------------------------------------------------------------------
+alias_group_default_name()
+{
+    local slug
+    slug="$(_alias_group_slug_from_filename "$1")"
+    _alias_group_titlecase_slug "$slug"
+}
+
+# -----------------------------------------------------------------------------
+# alias_group_default_keys — Comma-separated default key from filename slug.
+# -----------------------------------------------------------------------------
+alias_group_default_keys()
+{
+    _alias_group_slug_from_filename "$1"
+}
+
+# -----------------------------------------------------------------------------
+# alias_group_parse_header — Read # @group: / # @keys: from file top.
+# Sets globals _ag_header_group, _ag_header_keys (empty if unset).
+# -----------------------------------------------------------------------------
+alias_group_parse_header()
+{
+    local file="$1" line rest
+    _ag_header_group=""
+    _ag_header_keys=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        [ -z "${line//[[:space:]]/}" ] && continue
+        case "$line" in
+            \#*) ;;
+            *) break ;;
+        esac
+        case "$line" in
+            *@group:*)
+                rest="${line#*@group:}"
+                rest="${rest#"${rest%%[![:space:]]*}"}"
+                rest="${rest%"${rest##*[![:space:]]}"}"
+                _ag_header_group="$rest"
+                ;;
+            *@keys:*)
+                rest="${line#*@keys:}"
+                rest="${rest#"${rest%%[![:space:]]*}"}"
+                rest="${rest%"${rest##*[![:space:]]}"}"
+                _ag_header_keys="$rest"
+                ;;
+        esac
+    done < "$file"
+}
+
+# -----------------------------------------------------------------------------
+# alias_group_parse_members — Space-separated alias names from a group file.
+# -----------------------------------------------------------------------------
+alias_group_parse_members()
+{
+    local file="$1" line name result=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        name=$(printf '%s\n' "$line" | sed -E -n 's/^[[:space:]]*alias[[:space:]]+([A-Za-z0-9_-]+)=.*/\1/p')
+        if [ -n "$name" ]; then
+            result="${result:+$result }$name"
+        fi
+    done < "$file"
+    printf '%s\n' "$result"
+}
+
+# -----------------------------------------------------------------------------
+# alias_group_parse_hints — Lines of name<TAB>hint from # @hint + alias pairs.
+# -----------------------------------------------------------------------------
+alias_group_parse_hints()
+{
+    local file="$1" line hint="" name out=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            *@hint*)
+                hint="${line#*@hint}"
+                hint="${hint#"${hint%%[![:space:]]*}"}"
+                hint="${hint%"${hint##*[![:space:]]}"}"
+                ;;
+            *)
+                name=$(printf '%s\n' "$line" | sed -E -n 's/^[[:space:]]*alias[[:space:]]+([A-Za-z0-9_-]+)=.*/\1/p')
+                if [ -n "$name" ] && [ -n "$hint" ]; then
+                    out="${out}${out:+$'\n'}$name$(printf '\t')$hint"
+                    hint=""
+                fi
+                ;;
+        esac
+    done < "$file"
+    printf '%s\n' "$out"
+}
+
+# -----------------------------------------------------------------------------
+# build_alias_group_registry — Scan a directory of 20-99 group files.
+# -----------------------------------------------------------------------------
+build_alias_group_registry()
+{
+    local dir="$1" f base name keys members
+    ALIAS_GROUP_ORDER=()
+    ALIAS_GROUP_KEYS=()
+    ALIAS_GROUP_MEMBERS=()
+    ALIAS_GROUP_FILES=()
+    ALIAS_HINT_LINES=""
+
+    for f in "$dir"/*.sh; do
+        [ -r "$f" ] || continue
+        base="$(basename "$f")"
+        case "$base" in
+            [2-9][0-9]-*.sh) ;;
+            *) continue ;;
+        esac
+
+        _ag_header_group=""
+        _ag_header_keys=""
+        alias_group_parse_header "$f"
+        name="${_ag_header_group:-$(alias_group_default_name "$base")}"
+        keys="${_ag_header_keys:-$(alias_group_default_keys "$base")}"
+        members="$(alias_group_parse_members "$f")"
+
+        ALIAS_GROUP_ORDER+=("$name")
+        ALIAS_GROUP_KEYS+=("$keys")
+        ALIAS_GROUP_MEMBERS+=("$members")
+        ALIAS_GROUP_FILES+=("$f")
+
+        local hint_lines
+        hint_lines="$(alias_group_parse_hints "$f")"
+        if [ -n "$hint_lines" ]; then
+            ALIAS_HINT_LINES="${ALIAS_HINT_LINES}${ALIAS_HINT_LINES:+$'\n'}${hint_lines}"
+        fi
+    done
+}
+
+# -----------------------------------------------------------------------------
+# group_keys — Comma-separated filter tokens for a canonical group name.
+# -----------------------------------------------------------------------------
+group_keys()
+{
+    local i
+    for i in "${!ALIAS_GROUP_ORDER[@]}"; do
+        if [ "${ALIAS_GROUP_ORDER[$i]}" = "$1" ]; then
+            printf '%s\n' "${ALIAS_GROUP_KEYS[$i]}"
+            return 0
+        fi
+    done
+}
+
+# -----------------------------------------------------------------------------
+# group_members — Space-separated alias names for a canonical group name.
 # -----------------------------------------------------------------------------
 group_members()
 {
-    case "$1" in
-        "Alias management") echo "$GROUP_ALIAS_MANAGEMENT" ;;
-        "Git")              echo "$GROUP_GIT" ;;
-        "Other")            echo "" ;;   # Fallback is computed dynamically
-    esac
+    local i
+    for i in "${!ALIAS_GROUP_ORDER[@]}"; do
+        if [ "${ALIAS_GROUP_ORDER[$i]}" = "$1" ]; then
+            printf '%s\n' "${ALIAS_GROUP_MEMBERS[$i]}"
+            return 0
+        fi
+    done
 }
 
 # -----------------------------------------------------------------------------
 # resolve_group_name — Map a user token to a canonical group name.
-# Usage:
-#   resolve_group_name "git"         # -> "Git"
-#   resolve_group_name "aliases"     # -> "Alias management"
-# Return:
-#   0 with canonical group name on stdout if matched; 1 if unknown.
-# Behavior:
-#   • Case-insensitive match against tokens from group_keys().
-#   • Used by list_aliases_wrapper to parse optional filters.
 # -----------------------------------------------------------------------------
 resolve_group_name()
 {
-    local token lowered g k
+    local token lowered g k i
     token="$1"
     lowered=$(printf '%s' "$token" | tr '[:upper:]' '[:lower:]')
-
-    # Iterate ordered list to respect canonical display order
-    for g in "${ALIAS_GROUP_ORDER[@]}"; do
-        IFS=, read -r -a keys <<<"$(group_keys "$g")"
+    for i in "${!ALIAS_GROUP_ORDER[@]}"; do
+        g="${ALIAS_GROUP_ORDER[$i]}"
+        IFS=, read -r -a keys <<<"${ALIAS_GROUP_KEYS[$i]}"
         for k in "${keys[@]}"; do
+            k=$(printf '%s' "$k" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             if [ "$lowered" = "$k" ]; then
                 printf '%s\n' "$g"
                 return 0
@@ -113,33 +248,35 @@ resolve_group_name()
 }
 
 # -----------------------------------------------------------------------------
-# classify_group — Determine which canonical group an alias belongs to.
-# Usage:
-#   classify_group "gc"              # -> "Git"
-# Behavior:
-#   • Checks each explicit group’s members in ALIAS_GROUP_ORDER (skipping “Other”).
-#   • If no membership matches, returns “Other”.
-# Notes:
-#   • Matching is string-exact against configured alias names.
-#   • Keep GROUP_* lists in sync with your public aliases to avoid surprises.
+# classify_group — Return the group containing an alias, or empty if unknown.
 # -----------------------------------------------------------------------------
 classify_group()
 {
-    local name="$1" g members
-
-    # Try all explicit groups in order (skip fallback “Other” during checks)
-    for g in "${ALIAS_GROUP_ORDER[@]}"; do
-        [ "$g" = "Other" ] && continue
-        members="$(group_members "$g")"
-
-        # Word-boundary style match using space-padding to avoid partial hits
+    local name="$1" i members
+    for i in "${!ALIAS_GROUP_ORDER[@]}"; do
+        members="${ALIAS_GROUP_MEMBERS[$i]}"
         case " $members " in
-            *" $name "*) printf '%s\n' "$g"; return 0 ;;
+            *" $name "*) printf '%s\n' "${ALIAS_GROUP_ORDER[$i]}"; return 0 ;;
         esac
     done
+    printf '\n'
+    return 1
+}
 
-    # Default fallback
-    printf 'Other\n'
+# -----------------------------------------------------------------------------
+# alias_hint_for — Hint text for an alias, or empty if none.
+# -----------------------------------------------------------------------------
+alias_hint_for()
+{
+    local name="$1" line
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        case "$line" in
+            "$name"$'\t'*) printf '%s\n' "${line#*$'\t'}"; return 0 ;;
+        esac
+    done <<EOF
+$ALIAS_HINT_LINES
+EOF
 }
 
 # ===================================== EOF ====================================
