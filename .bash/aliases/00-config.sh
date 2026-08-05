@@ -41,7 +41,7 @@ _alias_group_slug_from_filename()
     local filename="$1" base
     base="${filename%.sh}"
     case "$base" in
-        ??-*) base="${base#??-}" ;;
+        [0-9][0-9]-*) base="${base#??-}" ;;
     esac
     case "$base" in
         *-aliases) base="${base%-aliases}" ;;
@@ -82,7 +82,9 @@ alias_group_default_name()
 # -----------------------------------------------------------------------------
 alias_group_default_keys()
 {
-    _alias_group_slug_from_filename "$1"
+    local slug
+    slug="$(_alias_group_slug_from_filename "$1")"
+    printf '%s\n' "$(printf '%s' "$slug" | tr '[:upper:]' '[:lower:]')"
 }
 
 # -----------------------------------------------------------------------------
@@ -100,15 +102,17 @@ alias_group_parse_header()
             \#*) ;;
             *) break ;;
         esac
-        case "$line" in
-            *@group:*)
-                rest="${line#*@group:}"
+        rest="${line#\#}"
+        rest="${rest#"${rest%%[![:space:]]*}"}"
+        case "$rest" in
+            @group:*)
+                rest="${rest#@group:}"
                 rest="${rest#"${rest%%[![:space:]]*}"}"
                 rest="${rest%"${rest##*[![:space:]]}"}"
                 _ag_header_group="$rest"
                 ;;
-            *@keys:*)
-                rest="${line#*@keys:}"
+            @keys:*)
+                rest="${rest#@keys:}"
                 rest="${rest#"${rest%%[![:space:]]*}"}"
                 rest="${rest%"${rest##*[![:space:]]}"}"
                 _ag_header_keys="$rest"
@@ -137,13 +141,19 @@ alias_group_parse_members()
 # -----------------------------------------------------------------------------
 alias_group_parse_hints()
 {
-    local file="$1" line hint="" name out=""
+    local file="$1" line hint="" name out="" rest
     while IFS= read -r line || [ -n "$line" ]; do
         case "$line" in
-            *@hint*)
-                hint="${line#*@hint}"
-                hint="${hint#"${hint%%[![:space:]]*}"}"
-                hint="${hint%"${hint##*[![:space:]]}"}"
+            \#*)
+                rest="${line#\#}"
+                rest="${rest#"${rest%%[![:space:]]*}"}"
+                case "$rest" in
+                    @hint*)
+                        hint="${rest#@hint}"
+                        hint="${hint#"${hint%%[![:space:]]*}"}"
+                        hint="${hint%"${hint##*[![:space:]]}"}"
+                        ;;
+                esac
                 ;;
             *)
                 name=$(printf '%s\n' "$line" | sed -E -n 's/^[[:space:]]*alias[[:space:]]+([A-Za-z0-9_-]+)=.*/\1/p')

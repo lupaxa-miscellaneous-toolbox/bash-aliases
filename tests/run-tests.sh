@@ -11,7 +11,10 @@ FAIL=0
 . "$TEST_ROOT/test_registry.sh"
 
 test_default_name_from_filename
+test_default_keys_from_filename
 test_header_overrides
+test_header_rejects_inline_directives
+test_hints_reject_inline_directives
 test_parse_members_and_hints
 test_build_registry
 
