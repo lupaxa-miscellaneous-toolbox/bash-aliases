@@ -2,8 +2,8 @@
 # 20-other-aliases.sh — Miscellaneous / General-purpose aliases
 #
 # Purpose:
-#   This file is reserved for all aliases that don’t neatly fit into other
-#   groups (e.g., Alias management or Git). It’s a good place to define
+#   This file is reserved for all aliases that don't neatly fit into other
+#   groups (e.g., Alias management or Git). It's a good place to define
 #   simple quality-of-life shell shortcuts, system helpers, or navigation
 #   commands that improve your daily workflow.
 #
@@ -15,8 +15,8 @@
 # Structure:
 #   - Keep function-based helpers minimal here; store logic-heavy ones in a
 #     dedicated functions file instead.
-#   - Public aliases here should be registered in GROUP_OTHER within
-#     00-config.sh to appear under the “Other” group in list-aliases output.
+#   - Aliases defined in this file are grouped under “Other” via the header
+#     tags below (no manual registration in 00-config.sh).
 #
 # Example workflow:
 #   list-aliases other       # Display only “Other” group aliases
@@ -27,6 +27,9 @@
 #   - You can split this further (e.g., 29-system-aliases.sh, 29-docker.sh)
 #     if you have many miscellaneous aliases.
 ###############################################################################
+
+# @group: Other
+# @keys: other,misc,miscellaneous
 
 alias print='lpr -o sides=two-sided-long-edge -o prettyprint'
 
@@ -59,10 +62,14 @@ alias mkdocs-tailnet='mkdocs serve --dev-addr "$(tailscale ip -4):8000"'
 # alias rmf='rm -i'          # Interactive file removal (safety prompt)
 
 ###############################################################################
-# To add new aliases:
-#   1) Define them here (or create a new file in ~/.bash/aliases/ with a
-#      higher numeric prefix).
-#   2) Add their names to GROUP_OTHER in 00-config.sh.
-#   3) Run `reload-aliases` to make them active.
+# To add new aliases to this group:
+#   1) Define them in this file.
+#   2) Run `reload-aliases`.
+#
+# To add a new group:
+#   1) Create ~/.bash/aliases/NN-name.sh (NN >= 20), optional header:
+#        # @group: Display Name
+#        # @keys: key1,key2
+#   2) Add alias lines in that file.
+#   3) Run `reload-aliases`.
 ###############################################################################
-
