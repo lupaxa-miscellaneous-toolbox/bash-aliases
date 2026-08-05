@@ -12,16 +12,18 @@
 # Conventions:
 #   • Public hyphenated commands are defined as aliases in 20-*.sh files
 #     (e.g., alias list-aliases='list_aliases_wrapper').
-#   • Group configuration lives in 00-config.sh and must be sourced first.
+#   • Group configuration is registry-backed from 00-config.sh / file scan.
 #   • Function definitions avoid the 'function' keyword; opening brace on next line.
 #
 # Dependencies:
 #   • Requires the following from 00-config.sh:
 #       - ALIAS_GROUP_ORDER (Bash array; preserves names with spaces)
+#       - ALIAS_GROUP_FILES / ALIAS_GROUP_MEMBERS
 #       - group_keys()
 #       - group_members()
 #       - resolve_group_name()
 #       - classify_group()
+#       - alias_hint_for()
 #
 # Notes:
 #   • Output formatting uses fixed-width columns for consistent table rendering.
@@ -92,17 +94,17 @@ list_aliases_wrapper()
 
             # Determine alias' group
             local g
-            g="$(classify_group "$name")"
+            if ! g="$(classify_group "$name")"; then
+                continue
+            fi
             [ "$g" != "$group" ] && continue
 
-            # Parameter hints for known parameterized aliases
-            local display="$name"
-            case "$name" in
-                push-all)          display="$name <message>" ;;
-                delete-alias)      display="$name <alias_name>" ;;
-                tag-push)          display="$name <tag> [message]" ;;
-                gca)               display="$name <message>" ;;
-            esac
+            # Parameter hints from the group registry
+            local display="$name" hint
+            hint="$(alias_hint_for "$name")"
+            if [ -n "$hint" ]; then
+                display="$name $hint"
+            fi
 
             printf "$fmt" "$display" "$cmd"
             group_printed=1
@@ -320,15 +322,25 @@ tag_push_wrapper()
 ###############################################################################
 check_alias_groups_wrapper()
 {
-    local ok=1 g name members
-    echo "🔎 Checking that group members are defined as aliases..."
+    local ok=1 i name members f
+    echo "🔎 Checking alias groups (file → group registry)..."
 
-    # Iterate over the array to preserve group names with spaces
-    for g in "${ALIAS_GROUP_ORDER[@]}"; do
-        members="$(group_members "$g")"
+    if [ "${#ALIAS_GROUP_ORDER[@]}" -eq 0 ]; then
+        echo "⚠️  No groups registered. Did build_alias_group_registry run?"
+        return 1
+    fi
+
+    for i in "${!ALIAS_GROUP_ORDER[@]}"; do
+        f="${ALIAS_GROUP_FILES[$i]}"
+        if [ ! -r "$f" ]; then
+            echo "⚠️  Group '${ALIAS_GROUP_ORDER[$i]}': file not readable: $f"
+            ok=0
+            continue
+        fi
+        members="${ALIAS_GROUP_MEMBERS[$i]}"
         for name in $members; do
             if ! alias "$name" >/dev/null 2>&1; then
-                echo "⚠️  In group '$g': alias '$name' not found (typo or not loaded yet?)"
+                echo "⚠️  In group '${ALIAS_GROUP_ORDER[$i]}': alias '$name' not found (typo or not loaded yet?)"
                 ok=0
             fi
         done

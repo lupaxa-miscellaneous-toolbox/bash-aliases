@@ -28,6 +28,9 @@
 #   check-alias-groups           # Validate group-to-alias consistency
 ###############################################################################
 
+# @group: Alias management
+# @keys: alias,aliases,management
+
 # -----------------------------------------------------------------------------
 # list-aliases — Display all loaded aliases in a structured table
 # Wrapper: list_aliases_wrapper()
@@ -53,6 +56,7 @@ alias list-alias-groups='list_alias_groups_wrapper'
 #   Interactively deletes a named alias (temporary). The user is prompted for
 #   confirmation before the alias is removed.
 # -----------------------------------------------------------------------------
+# @hint <alias_name>
 alias delete-alias='delete_alias_wrapper'
 
 # -----------------------------------------------------------------------------

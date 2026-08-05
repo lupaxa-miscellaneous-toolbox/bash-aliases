@@ -30,6 +30,9 @@
 #   gl                                   # Compact decorated log graph
 ###############################################################################
 
+# @group: Git
+# @keys: git
+
 # -----------------------------------------------------------------------------
 # push-all — Add, commit, and optionally push all changes (with confirmation)
 # Wrapper: push_all_wrapper()
@@ -37,6 +40,7 @@
 #   Stages all modified files, commits with the given message, and asks before
 #   pushing to the remote branch. Useful for safety-conscious workflows.
 # -----------------------------------------------------------------------------
+# @hint <message>
 alias push-all='push_all_wrapper'
 
 # -----------------------------------------------------------------------------
@@ -46,6 +50,7 @@ alias push-all='push_all_wrapper'
 #   Creates a new annotated tag (-a) with an optional message, then pushes all
 #   tags to the remote. Automatically names the tag if no message is supplied.
 # -----------------------------------------------------------------------------
+# @hint <tag> [message]
 alias tag-push='tag_push_wrapper'
 
 # -----------------------------------------------------------------------------
@@ -79,6 +84,7 @@ alias gl='git log --oneline --graph --decorate --all'
 alias gd='git diff --cached'
 
 # Commit all tracked changes with message
+# @hint <message>
 alias gca='git commit -a -m'
 
 # Pull latest changes from remote
