@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 ###############################################################################
 # 00-config.sh — Alias group registry helpers
 #
@@ -56,6 +57,8 @@ _alias_group_titlecase_slug()
 {
     local slug="$1" word first rest result="" old_ifs="$IFS"
     IFS='-'
+    # Intentionally unquoted: split hyphenated slug into words.
+    # shellcheck disable=SC2086
     set -- $slug
     IFS="$old_ifs"
     for word; do
@@ -288,6 +291,217 @@ alias_hint_for()
     done <<EOF
 $ALIAS_HINT_LINES
 EOF
+}
+
+# -----------------------------------------------------------------------------
+# bash_alias_dir — Directory of group files (override with BASH_ALIAS_DIR).
+# -----------------------------------------------------------------------------
+bash_alias_dir()
+{
+    printf '%s\n' "${BASH_ALIAS_DIR:-$HOME/.bash/aliases}"
+}
+
+# -----------------------------------------------------------------------------
+# alias_quote_single — Escape a string for use inside single-quoted alias values.
+# -----------------------------------------------------------------------------
+alias_quote_single()
+{
+    printf '%s' "$1" | sed "s/'/'\\\\''/g"
+}
+
+# -----------------------------------------------------------------------------
+# alias_format_line — Emit: alias name='escaped-command'
+# -----------------------------------------------------------------------------
+alias_format_line()
+{
+    local name="$1" cmd="$2"
+    printf "alias %s='%s'\n" "$name" "$(alias_quote_single "$cmd")"
+}
+
+# -----------------------------------------------------------------------------
+# alias_is_hint_line — 0 if line is a # @hint directive (optional indent).
+# -----------------------------------------------------------------------------
+alias_is_hint_line()
+{
+    local line="$1" rest
+    case "$line" in
+        \#*|[[:space:]]\#*) ;;
+        *) return 1 ;;
+    esac
+    rest="${line#*\#}"
+    rest="${rest#"${rest%%[![:space:]]*}"}"
+    case "$rest" in
+        @hint|@hint[[:space:]]*) return 0 ;;
+    esac
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# alias_group_file_for_name — Path of the group file that defines an alias.
+# -----------------------------------------------------------------------------
+alias_group_file_for_name()
+{
+    local name="$1" i members
+    for i in "${!ALIAS_GROUP_ORDER[@]}"; do
+        members="${ALIAS_GROUP_MEMBERS[$i]}"
+        case " $members " in
+            *" $name "*) printf '%s\n' "${ALIAS_GROUP_FILES[$i]}"; return 0 ;;
+        esac
+    done
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# alias_group_file_for_canonical — Path for a canonical group display name.
+# -----------------------------------------------------------------------------
+alias_group_file_for_canonical()
+{
+    local i
+    for i in "${!ALIAS_GROUP_ORDER[@]}"; do
+        if [ "${ALIAS_GROUP_ORDER[$i]}" = "$1" ]; then
+            printf '%s\n' "${ALIAS_GROUP_FILES[$i]}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# alias_next_group_nn — Next free numeric prefix in 20–89 (prefer tens).
+# -----------------------------------------------------------------------------
+alias_next_group_nn()
+{
+    local dir="$1" used="" f n
+    for f in "$dir"/[2-9][0-9]-*.sh; do
+        [ -e "$f" ] || continue
+        n=$(basename "$f")
+        n=${n%%-*}
+        used="$used $n"
+    done
+    for n in 20 30 40 50 60 70 80; do
+        case " $used " in
+            *" $n "*) continue ;;
+        esac
+        printf '%s\n' "$n"
+        return 0
+    done
+    n=21
+    while [ "$n" -le 89 ]; do
+        case " $used " in
+            *" $n "*) ;;
+            *) printf '%s\n' "$n"; return 0 ;;
+        esac
+        n=$((n + 1))
+    done
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# alias_slugify — Lowercase hyphenated slug for new group files.
+# -----------------------------------------------------------------------------
+alias_slugify()
+{
+    printf '%s' "$1" \
+        | tr '[:upper:]' '[:lower:]' \
+        | tr -cs 'a-z0-9' '-' \
+        | sed 's/^-//;s/-$//'
+}
+
+# -----------------------------------------------------------------------------
+# alias_create_group_file — Create NN-slug.sh with header; print path.
+# -----------------------------------------------------------------------------
+alias_create_group_file()
+{
+    local dir="$1" raw_slug="$2" nn slug title path
+    nn=$(alias_next_group_nn "$dir") || {
+        echo "❌ No free group prefix left under $dir (20–89)." >&2
+        return 1
+    }
+    slug=$(alias_slugify "$raw_slug")
+    if [ -z "$slug" ]; then
+        echo "❌ Invalid group slug: $raw_slug" >&2
+        return 1
+    fi
+    title=$(alias_group_default_name "${nn}-${slug}.sh")
+    path="$dir/${nn}-${slug}.sh"
+    if [ -e "$path" ]; then
+        echo "❌ Group file already exists: $path" >&2
+        return 1
+    fi
+    {
+        printf '%s\n' "###############################################################################"
+        printf '%s\n' "# ${nn}-${slug}.sh — ${title}"
+        printf '%s\n' "###############################################################################"
+        printf '\n'
+        printf '%s\n' "# @group: ${title}"
+        printf '%s\n' "# @keys: ${slug}"
+        printf '\n'
+    } >"$path"
+    printf '%s\n' "$path"
+}
+
+# -----------------------------------------------------------------------------
+# alias_append_to_file — Append an alias line to a group file.
+# -----------------------------------------------------------------------------
+alias_append_to_file()
+{
+    local file="$1" name="$2" cmd="$3"
+    alias_format_line "$name" "$cmd" >>"$file"
+}
+
+# -----------------------------------------------------------------------------
+# alias_replace_in_file — Replace the definition line for name (keep @hint).
+# -----------------------------------------------------------------------------
+alias_replace_in_file()
+{
+    local file="$1" name="$2" cmd="$3" tmp line replaced=0
+    tmp=$(mktemp) || return 1
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ ^[[:space:]]*alias[[:space:]]+${name}= ]]; then
+            alias_format_line "$name" "$cmd" >>"$tmp"
+            replaced=1
+        else
+            printf '%s\n' "$line" >>"$tmp"
+        fi
+    done <"$file"
+    if [ "$replaced" -ne 1 ]; then
+        rm -f "$tmp"
+        return 1
+    fi
+    mv "$tmp" "$file"
+}
+
+# -----------------------------------------------------------------------------
+# alias_remove_from_file — Remove alias line and its preceding @hint (if any).
+# -----------------------------------------------------------------------------
+alias_remove_from_file()
+{
+    local file="$1" name="$2" tmp line pending="" removed=0
+    tmp=$(mktemp) || return 1
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ ^[[:space:]]*alias[[:space:]]+${name}= ]]; then
+            pending=""
+            removed=1
+            continue
+        fi
+        if [ -n "$pending" ]; then
+            printf '%s\n' "$pending" >>"$tmp"
+            pending=""
+        fi
+        if alias_is_hint_line "$line"; then
+            pending="$line"
+        else
+            printf '%s\n' "$line" >>"$tmp"
+        fi
+    done <"$file"
+    if [ -n "$pending" ]; then
+        printf '%s\n' "$pending" >>"$tmp"
+    fi
+    if [ "$removed" -ne 1 ]; then
+        rm -f "$tmp"
+        return 1
+    fi
+    mv "$tmp" "$file"
 }
 
 # ===================================== EOF ====================================

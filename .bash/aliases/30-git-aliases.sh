@@ -1,5 +1,6 @@
+# shellcheck shell=bash
 ###############################################################################
-# 20-git-aliases.sh — Public Git command aliases and wrappers
+# 30-git-aliases.sh — Public Git command aliases and wrappers
 #
 # Purpose:
 #   Define user-friendly Git helper aliases that streamline common workflows.

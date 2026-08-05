@@ -1,0 +1,85 @@
+# Reference
+
+## Layout
+
+| Path                                | Role                                                   |
+| ----------------------------------- | ------------------------------------------------------ |
+| `.bash_aliases`                     | Loader: sources alias dir `*.sh`, builds registry      |
+| `.bash/aliases/00-*.sh`             | Shared config / registry helpers (not a group)         |
+| `.bash/aliases/10-*.sh`             | Shared functions (not a group)                         |
+| `.bash/aliases/20-*.sh` … `99-*.sh` | One file = one alias group                             |
+
+Files load in lexicographic order. Use numeric prefixes to control order.
+
+### Shipped groups
+
+| File                     | Group            | Example keys                          |
+| ------------------------ | ---------------- | ------------------------------------- |
+| `20-alias-management.sh` | Alias management | `alias`, `aliases`, `management`      |
+| `30-git-aliases.sh`      | Git              | `git`                                 |
+| `40-system.sh`           | System           | `system`, `sys`, `brew`, `print`      |
+| `50-mkdocs.sh`           | MkDocs           | `mkdocs`, `docs`                      |
+| `90-other-aliases.sh`    | Other            | `other`, `misc`, `miscellaneous`      |
+
+## Group identity
+
+For a group file `NN-name.sh` (or `NN-name-aliases.sh`):
+
+- Default display name — strip `NN-` and trailing `-aliases`, title-case the rest (`30-git-aliases.sh` → **Git**)
+- Default filter key — lowercase hyphenated slug (`git`)
+- Optional header overrides at the top of the file (see below)
+
+```bash
+# @group: Alias management
+# @keys: alias,aliases,management
+```
+
+## Parameter hints
+
+Place `# @hint …` on the line before an alias (leading whitespace allowed):
+
+```bash
+# @hint <message>
+alias push-all='push_all_wrapper'
+```
+
+`list-aliases` shows `push-all <message>` when a hint is present.
+
+## Public commands
+
+| Alias                | Purpose                                              |
+| -------------------- | ---------------------------------------------------- |
+| `list-aliases`       | Grouped table of loaded aliases                      |
+| `list-alias-groups`  | Group names and filter keys                          |
+| `add-alias`          | Append alias to a group file (create group if needed)|
+| `edit-alias`         | Change an alias command in its group file            |
+| `delete-alias`       | Remove from session and/or group file                |
+| `check-alias-groups` | Validate registry vs defined aliases                 |
+| `reload-aliases`     | Re-source loader and rebuild registry                |
+
+### `add-alias`
+
+```text
+add-alias <group> <name> <command...>
+```
+
+### `edit-alias`
+
+```text
+edit-alias <name> <new command...>
+edit-alias <name>                    # prompts for command
+```
+
+### `delete-alias`
+
+```text
+delete-alias <name>
+delete-alias <name> --session | -s
+delete-alias <name> --file | -f
+```
+
+## Install path
+
+Default alias directory: `$HOME/.bash/aliases`. Override with
+`BASH_ALIAS_DIR` (useful for tests). Point that directory (or a symlink) at
+this repository’s `.bash/aliases` tree.

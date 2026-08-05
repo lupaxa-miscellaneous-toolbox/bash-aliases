@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 ###############################################################################
 # ~/.bash_aliases (loader)
 # Dynamically loads all alias-related scripts from ~/.bash/aliases/
@@ -6,10 +7,14 @@
 # Groups are derived from 20-*.sh … 99-*.sh (see 00-config.sh).
 ###############################################################################
 
-alias_dir="$HOME/.bash/aliases"
+# Override for tests / alternate installs: BASH_ALIAS_DIR=/path/to/aliases
+BASH_ALIAS_DIR="${BASH_ALIAS_DIR:-$HOME/.bash/aliases}"
+alias_dir="$BASH_ALIAS_DIR"
 
 if [ -d "$alias_dir" ]; then
     for f in "$alias_dir"/*.sh; do
+        # Dynamic path from alias_dir — cannot be a constant source.
+        # shellcheck disable=SC1090
         [ -r "$f" ] && . "$f"
     done
     # Build file→group registry after helpers (00) and group files are present
