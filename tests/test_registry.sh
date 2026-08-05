@@ -67,6 +67,20 @@ EOF
     rm -f "$f"
 }
 
+test_hints_reject_false_prefix_matches() {
+    echo "test_hints_reject_false_prefix_matches"
+    local f
+    f="$(mktemp "${TMPDIR:-/tmp}/alias-group-hints-prefix.XXXXXX")"
+    cat > "$f" <<'EOF'
+# @hinted text should not be a hint
+alias foo='bar'
+# @hint-example also not a hint
+alias baz='qux'
+EOF
+    assert_eq "no hint from @hinted" "" "$(alias_group_parse_hints "$f")"
+    rm -f "$f"
+}
+
 test_parse_members_and_hints() {
     echo "test_parse_members_and_hints"
     local f="$TEST_ROOT/fixtures/20-git-aliases.sh"

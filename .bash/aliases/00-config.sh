@@ -148,7 +148,7 @@ alias_group_parse_hints()
                 rest="${line#\#}"
                 rest="${rest#"${rest%%[![:space:]]*}"}"
                 case "$rest" in
-                    @hint*)
+                    @hint|@hint[[:space:]]*)
                         hint="${rest#@hint}"
                         hint="${hint#"${hint%%[![:space:]]*}"}"
                         hint="${hint%"${hint##*[![:space:]]}"}"
