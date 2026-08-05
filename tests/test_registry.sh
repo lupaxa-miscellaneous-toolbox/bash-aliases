@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 # Sourced by run-tests.sh after 00-config.sh
+# FAIL is read by run-tests.sh after all suites finish.
+# shellcheck disable=SC2034
 
 assert_eq() {
     local desc="$1" expected="$2" actual="$3"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 # Sourced by run-tests.sh after 00-config.sh
 
 test_alias_quote_and_format() {
@@ -22,7 +23,7 @@ test_alias_file_roundtrip() {
     echo "test_alias_file_roundtrip"
     local dir file
     dir=$(mktemp -d)
-    BASH_ALIAS_DIR="$dir"
+    export BASH_ALIAS_DIR="$dir"
     file=$(alias_create_group_file "$dir" "docker")
     assert_eq "first free nn" "20" "$(basename "$file" | cut -d- -f1)"
 

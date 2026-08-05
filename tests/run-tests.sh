@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
 TEST_ROOT="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$TEST_ROOT/.." && pwd)"
-FAIL=0
+# Mutated by assert_eq in sourced test helpers.
+export FAIL=0
 
 # shellcheck source=/dev/null
 . "$REPO_ROOT/.bash/aliases/00-config.sh"
