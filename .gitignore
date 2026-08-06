@@ -2,6 +2,8 @@
 cursor-docs
 
 .worktrees/
+.DS_Store
+.cursor/
 .makefiles/
 .superpowers/
 site/
