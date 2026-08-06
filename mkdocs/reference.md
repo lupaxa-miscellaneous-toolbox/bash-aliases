@@ -11,15 +11,18 @@
 
 Files load in lexicographic order. Use numeric prefixes to control order.
 
-### Shipped groups
+### Shipped example groups
 
-| File                     | Group            | Example keys                          |
-| ------------------------ | ---------------- | ------------------------------------- |
-| `20-alias-management.sh` | Alias management | `alias`, `aliases`, `management`      |
-| `30-git-aliases.sh`      | Git              | `git`                                 |
-| `40-system.sh`           | System           | `system`, `sys`, `brew`, `print`      |
-| `50-mkdocs.sh`           | MkDocs           | `mkdocs`, `docs`                      |
-| `90-other-aliases.sh`    | Other            | `other`, `misc`, `miscellaneous`      |
+| File                     | Group            | Example keys                     |
+| ------------------------ | ---------------- | -------------------------------- |
+| `20-alias-management.sh` | Alias management | `alias`, `aliases`, `management` |
+| `30-git-aliases.sh`      | Git              | `git`                            |
+| `40-system.sh`           | System           | `system`, `sys`, `brew`          |
+| `50-mkdocs.sh`           | MkDocs           | `mkdocs`, `docs`                 |
+| `90-other-aliases.sh`    | Other            | `other`, `misc`, `miscellaneous` |
+
+These files are starter examples. Delete or rewrite them for your own machine;
+keep personal paths out of the shared repo.
 
 ## Group identity
 
@@ -83,3 +86,5 @@ delete-alias <name> --file | -f
 Default alias directory: `$HOME/.bash/aliases`. Override with
 `BASH_ALIAS_DIR` (useful for tests). Point that directory (or a symlink) at
 this repository’s `.bash/aliases` tree.
+
+Homebrew Bundle examples use `$BREWFILE` (default `$HOME/Brewfile`).

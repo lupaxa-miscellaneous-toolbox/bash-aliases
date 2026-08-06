@@ -1,26 +1,7 @@
 # shellcheck shell=bash
 ###############################################################################
-# 00-config.sh — Alias group registry helpers
-#
-# Purpose:
-#   Derive alias groups from 20-99 *.sh files (one file = one group). Each
-#   group file may declare optional header tags (# @group:, # @keys:) and
-#   per-alias hints (# @hint). This file builds parallel-array registries and
-#   provides lookup helpers — no GROUP_* membership lists or aliases here.
-#
-# How this fits in:
-#   - Loaded by ~/.bash_aliases (or your loader) before functions and aliases.
-#   - Call build_alias_group_registry <aliases-dir> after sourcing group files
-#     or before listing/classifying (loader wiring is handled elsewhere).
-#   - list_aliases_wrapper (10-functions.sh) uses:
-#       • ALIAS_GROUP_ORDER, ALIAS_GROUP_KEYS, ALIAS_GROUP_MEMBERS, ALIAS_GROUP_FILES
-#       • group_keys(), group_members(), resolve_group_name(), classify_group()
-#       • alias_hint_for()
-#
-# Conventions:
-#   - Group files: NN-<slug>.sh where NN is 20-99 (sorted lexicographically).
-#   - Default display name / keys derive from the filename slug.
-#   - Header tags at the top of a file override defaults.
+# 00-config.sh — Group registry
+# Builds the file→group registry and lookup helpers (one file = one group).
 ###############################################################################
 
 # Globals populated by build_alias_group_registry
@@ -431,6 +412,7 @@ alias_create_group_file()
     {
         printf '%s\n' "###############################################################################"
         printf '%s\n' "# ${nn}-${slug}.sh — ${title}"
+        printf '%s\n' "# Aliases for the ${title} group."
         printf '%s\n' "###############################################################################"
         printf '\n'
         printf '%s\n' "# @group: ${title}"

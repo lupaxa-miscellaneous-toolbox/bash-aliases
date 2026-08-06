@@ -1,10 +1,7 @@
 # shellcheck shell=bash
 ###############################################################################
-# ~/.bash_aliases (loader)
-# Dynamically loads all alias-related scripts from ~/.bash/aliases/
-# Files are sourced in lexicographic (alphabetical) order.
-# Use numeric prefixes (e.g., 00-, 10-, 20-) to control load order.
-# Groups are derived from 20-*.sh … 99-*.sh (see 00-config.sh).
+# .bash_aliases — Loader
+# Sources ~/.bash/aliases/*.sh in name order, then builds the group registry.
 ###############################################################################
 
 # Override for tests / alternate installs: BASH_ALIAS_DIR=/path/to/aliases

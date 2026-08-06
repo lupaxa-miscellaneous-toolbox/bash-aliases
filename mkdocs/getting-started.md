@@ -43,7 +43,8 @@ check-alias-groups
 ```
 
 You should see groups such as **Alias management**, **Git**, **System**,
-**MkDocs**, and **Other**.
+**MkDocs**, and **Other**, with portable example aliases (for example `gs`,
+`ll`, `mkdocs-serve`). Treat those as a starter pack — edit or delete freely.
 
 ## Try the helpers
 

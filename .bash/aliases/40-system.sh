@@ -1,25 +1,21 @@
 # shellcheck shell=bash
 ###############################################################################
-# 40-system.sh — System / machine helpers
-#
-# Homebrew bundle sync and local print shortcuts.
+# 40-system.sh — System
+# Disk/PATH helpers and optional Homebrew Bundle shortcuts.
 ###############################################################################
 
 # @group: System
-# @keys: system,sys,brew,homebrew,print
+# @keys: system,sys,brew,homebrew
 
-# -----------------------------------------------------------------------------
-# Printing
-# -----------------------------------------------------------------------------
-alias print='lpr -o sides=two-sided-long-edge -o prettyprint'
+# Override in ~/.bashrc if your Brewfile lives elsewhere.
+: "${BREWFILE:=$HOME/Brewfile}"
 
-# Numbered pretty-print via my_print() in 10-functions.sh
-alias lprint='my_print'
+alias dfh='df -h'
+alias path='echo "$PATH" | tr ":" "\n"'
 
-# -----------------------------------------------------------------------------
-# Homebrew
-# -----------------------------------------------------------------------------
-alias export-brew='brew bundle dump --describe --file=~/Desktop/GitMaster/Lupraxus/config-files/Brewfile --force'
-alias import-brew='brew bundle --file=~/Desktop/GitMaster/Lupraxus/config-files/Brewfile'
+alias brew-outdated='brew outdated'
+alias brew-update='brew update && brew upgrade'
+alias export-brew='brew bundle dump --describe --file="$BREWFILE" --force'
+alias import-brew='brew bundle --file="$BREWFILE"'
 
 # ===================================== EOF ====================================

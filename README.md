@@ -6,10 +6,10 @@
 
 <h1 align="center">Bash Aliases</h1>
 
-Modular Bash aliases with **file-equals-group** organisation: one group file
-under `~/.bash/aliases/` is one group. Manage them with `add-alias`,
-`edit-alias`, `delete-alias`, `list-aliases`, and `reload-aliases`, plus Git
-and system quality-of-life shortcuts.
+A **file-equals-group** Bash alias starter pack you can fork and extend. One
+group file under `~/.bash/aliases/` is one group. Ships example Git, system,
+MkDocs, and catch-all aliases, plus helpers: `add-alias`, `edit-alias`,
+`delete-alias`, `list-aliases`, and `reload-aliases`.
 
 ## Install
 
@@ -38,19 +38,31 @@ list-aliases
 check-alias-groups
 ```
 
+## Example aliases included
+
+| Group            | Examples                                              |
+| ---------------- | ----------------------------------------------------- |
+| Alias management | `list-aliases`, `add-alias`, `edit-alias`, …          |
+| Git              | `gs`, `gl`, `gca`, `push-all`, `tag-push`, …          |
+| System           | `dfh`, `brew-outdated`, `export-brew` → `~/Brewfile`  |
+| MkDocs           | `mkdocs-serve`, `mkdocs-build`, `mkdocs-lan`          |
+| Other            | `ll`, `la`, `mkcd`, `myip`                            |
+
+Homebrew Bundle helpers read/write `$BREWFILE` (default `~/Brewfile`). Override
+in `~/.bashrc` if you keep a Brewfile elsewhere.
+
 ## Manage aliases
 
 ```bash
-add-alias system dfh 'df -h'         # existing group (token from list-alias-groups)
+add-alias system ducks 'du -sh *'    # existing group (token from list-alias-groups)
 add-alias docker dps 'docker ps'     # creates NN-docker.sh if the group is new
-edit-alias dfh 'df -hT'              # update the command in its group file
-delete-alias dfh --file              # remove from file + this session
-delete-alias dfh --session           # this shell only
-delete-alias dfh                     # interactive: session vs file
+edit-alias ducks 'du -sh * | sort -h'
+delete-alias ducks --file            # remove from file + this session
+delete-alias ducks --session         # this shell only
+delete-alias ducks                   # interactive: session vs file
 ```
 
-Hand-editing group files (`30-git-aliases.sh`, `40-system.sh`, …) still works;
-run `reload-aliases` afterwards.
+Hand-editing group files still works; run `reload-aliases` afterwards.
 
 ## Group layout
 

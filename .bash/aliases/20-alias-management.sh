@@ -1,20 +1,7 @@
 # shellcheck shell=bash
 ###############################################################################
-# 20-alias-management.sh — Public alias management commands
-#
-# Purpose:
-#   User-facing aliases for listing, adding, editing, deleting, and checking
-#   the file-equals-group alias system.
-#
-# Usage examples:
-#   list-aliases
-#   list-aliases git
-#   add-alias system dfh 'df -h'
-#   add-alias docker dps 'docker ps'    # creates a new group file if needed
-#   edit-alias dfh 'df -hT'
-#   delete-alias dfh --file
-#   reload-aliases
-#   check-alias-groups
+# 20-alias-management.sh — Alias management
+# Public commands to list, add, edit, delete, reload, and check aliases.
 ###############################################################################
 
 # @group: Alias management

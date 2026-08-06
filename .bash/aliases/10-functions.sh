@@ -1,52 +1,12 @@
 # shellcheck shell=bash
 ###############################################################################
-# 10-functions.sh — Functions used by the alias system
-#
-# Purpose:
-#   Provide reusable Bash functions (underscored names) for:
-#     • Listing aliases in grouped tables with an optional group filter.
-#     • Displaying available groups.
-#     • Deleting an alias safely for the current session.
-#     • Helpful Git wrappers (undo last commit, push-all, tag-push).
-#     • Sanity check to ensure configured groups reference real aliases.
-#
-# Conventions:
-#   • Public hyphenated commands are defined as aliases in 20-*.sh files
-#     (e.g., alias list-aliases='list_aliases_wrapper').
-#   • Group configuration is registry-backed from 00-config.sh / file scan.
-#   • Function definitions avoid the 'function' keyword; opening brace on next line.
-#
-# Dependencies:
-#   • Requires the following from 00-config.sh:
-#       - ALIAS_GROUP_ORDER (Bash array; preserves names with spaces)
-#       - ALIAS_GROUP_FILES / ALIAS_GROUP_MEMBERS
-#       - group_keys()
-#       - group_members()
-#       - resolve_group_name()
-#       - classify_group()
-#       - alias_hint_for()
-#
-# Notes:
-#   • Output formatting uses fixed-width columns for consistent table rendering.
-#   • Known parameterized aliases get display hints (e.g., 'push-all <message>').
+# 10-functions.sh — Functions
+# Implementations for list/add/edit/delete helpers and the Git wrappers.
 ###############################################################################
 
-###############################################################################
-# list_aliases_wrapper — Pretty list of aliases (grouped), optional group filter
-#
-# Usage:
-#   list-aliases            # show all groups
-#   list-aliases git        # filter to group by token (case-insensitive)
-#   list-aliases alias      # filter to "Alias management"
-#   list-aliases other      # filter to "Other"
-#
-# Behavior:
-#   • Reads all current aliases via `alias -p`.
-#   • Classifies each alias into a group via classify_group().
-#   • Optionally filters by a user token (resolved by resolve_group_name()).
-#   • Adds parameter hints for known parameterized aliases.
-#   • Prints a 2-column table per group with clean separators.
-###############################################################################
+# -----------------------------------------------------------------------------
+# list_aliases_wrapper — Pretty list of aliases by group (optional filter)
+# -----------------------------------------------------------------------------
 list_aliases_wrapper()
 {
     local filter_group=""
@@ -121,17 +81,9 @@ EOF
     fi
 }
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # list_alias_groups_wrapper — List available groups and their filter tokens
-#
-# Usage:
-#   list-alias-groups
-#
-# Behavior:
-#   • Prints each canonical group from ALIAS_GROUP_ORDER.
-#   • Shows accepted tokens (from group_keys) that resolve to each group.
-#   • Provides brief usage examples for filtering.
-###############################################################################
+# -----------------------------------------------------------------------------
 list_alias_groups_wrapper()
 {
     echo
@@ -151,34 +103,26 @@ list_alias_groups_wrapper()
     echo
 }
 
-###############################################################################
-# _alias_mgmt_define — Define an alias in the current session from name + cmd.
-###############################################################################
+# -----------------------------------------------------------------------------
+# _alias_mgmt_define — Define an alias in the current session
+# -----------------------------------------------------------------------------
 _alias_mgmt_define()
 {
     local name="$1" cmd="$2"
     eval "alias ${name}=$(printf '%q' "$cmd")"
 }
 
-###############################################################################
-# _alias_mgmt_refresh_registry — Rebuild registry from BASH_ALIAS_DIR.
-###############################################################################
+# -----------------------------------------------------------------------------
+# _alias_mgmt_refresh_registry — Rebuild registry from BASH_ALIAS_DIR
+# -----------------------------------------------------------------------------
 _alias_mgmt_refresh_registry()
 {
     build_alias_group_registry "$(bash_alias_dir)"
 }
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # add_alias_wrapper — Append an alias to a group file (create group if needed)
-#
-# Usage:
-#   add-alias <group> <name> <command...>
-#
-# Behavior:
-#   • <group> may be an existing filter token (git, system, …) or a new slug.
-#   • New groups create NN-slug.sh under the aliases directory.
-#   • Defines the alias in the current session and rebuilds the registry.
-###############################################################################
+# -----------------------------------------------------------------------------
 add_alias_wrapper()
 {
     if [ $# -lt 3 ]; then
@@ -228,13 +172,9 @@ add_alias_wrapper()
     echo "   Group file: $file"
 }
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # edit_alias_wrapper — Change an alias command in its group file
-#
-# Usage:
-#   edit-alias <name> <new command...>
-#   edit-alias <name>                 # prompts for the new command
-###############################################################################
+# -----------------------------------------------------------------------------
 edit_alias_wrapper()
 {
     if [ $# -lt 1 ]; then
@@ -275,19 +215,9 @@ edit_alias_wrapper()
     echo "   Group file: $file"
 }
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # delete_alias_wrapper — Delete an alias (session and/or group file)
-#
-# Usage:
-#   delete-alias <name>
-#   delete-alias <name> --session
-#   delete-alias <name> --file
-#
-# Behavior:
-#   • --session: unalias for this shell only
-#   • --file: remove from the group file (and unalias if defined)
-#   • no flag: interactive choice
-###############################################################################
+# -----------------------------------------------------------------------------
 delete_alias_wrapper()
 {
     if [ $# -lt 1 ]; then
@@ -380,21 +310,10 @@ delete_alias_wrapper()
     fi
 }
 
-###############################################################################
-# Git helpers (functions only; public hyphenated aliases in 20-*.sh)
-###############################################################################
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # undo_last_commit_wrapper — Undo last commit (keep changes staged)
-#
-# Usage:
-#   undo-last-commit
-#
-# Behavior:
-#   • Performs a soft reset to the previous commit, keeping your changes staged.
-#   • Asks for confirmation before modifying history.
-#   • Safe pattern when you misworded a commit but want to re-commit immediately.
-###############################################################################
+# -----------------------------------------------------------------------------
 undo_last_commit_wrapper()
 {
     echo "⚠️  This will undo the last commit but keep changes staged."
@@ -404,18 +323,9 @@ undo_last_commit_wrapper()
     git reset --soft HEAD~1 && echo "✅ Last commit undone (changes remain staged)."
 }
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # push_all_wrapper — Add, commit, and optionally push with confirmation
-#
-# Usage:
-#   push-all <commit message>
-#
-# Behavior:
-#   • Stages all changes, commits with the provided message, and optionally pushes.
-#   • Detects current branch name for display.
-#   • Skips push unless explicitly confirmed.
-#   • Gracefully exits if nothing is staged to commit.
-###############################################################################
+# -----------------------------------------------------------------------------
 push_all_wrapper()
 {
     if [ $# -eq 0 ]; then
@@ -461,17 +371,9 @@ push_all_wrapper()
     fi
 }
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # tag_push_wrapper — Create an annotated tag and push tags
-#
-# Usage:
-#   tag-push <tag> [message]
-#
-# Behavior:
-#   • Creates an *annotated* tag (-a) with the given message (defaults to "Tag <tag>").
-#   • Pushes all tags afterwards (`git push --tags`).
-#   • Exits non-zero on failure at any step.
-###############################################################################
+# -----------------------------------------------------------------------------
 tag_push_wrapper()
 {
     if [ $# -lt 1 ]; then
@@ -492,18 +394,9 @@ tag_push_wrapper()
     echo "✅ Tag '$tag' created and pushed successfully."
 }
 
-###############################################################################
-# check_alias_groups_wrapper — Verify group config matches loaded aliases
-#
-# Usage:
-#   check-alias-groups
-#
-# Behavior:
-#   • Iterates over groups in ALIAS_GROUP_ORDER.
-#   • For each configured member name, checks a matching alias is currently defined.
-#   • Warns for missing aliases (typos or files not yet loaded).
-#   • Returns success (0) if all good; non-zero otherwise.
-###############################################################################
+# -----------------------------------------------------------------------------
+# check_alias_groups_wrapper — Verify group registry matches loaded aliases
+# -----------------------------------------------------------------------------
 check_alias_groups_wrapper()
 {
     local ok=1 i name members f
@@ -532,31 +425,6 @@ check_alias_groups_wrapper()
 
     [ $ok -eq 1 ] && echo "✅ Groups look good."
     return $((!ok))
-}
-
-###############################################################################
-# my_print — print files to the laster printer
-#
-# Usage:
-#   orint $filename
-###############################################################################
-
-my_print()
-{
-    if [ "$#" -ne 1 ]; then
-        echo "print: error: exactly one filename is required" >&2
-        echo "usage: print <file>" >&2
-        return 2
-    fi
-
-    if [ ! -r "$1" ]; then
-        echo "print: error: cannot read file: $1" >&2
-        return 2
-    fi
-
-    title="$(basename "${1}")"
-
-    nl -ba -w4 -s"| " "$1" | lpr -J "${title}" -o sides=two-sided-long-edge -o prettyprint
 }
 
 # ===================================== EOF ====================================

@@ -1,13 +1,14 @@
 # shellcheck shell=bash
 ###############################################################################
-# 50-mkdocs.sh — MkDocs helpers
-#
-# Serve docs on the Tailscale IPv4 address for LAN/tailnet access.
+# 50-mkdocs.sh — MkDocs
+# Serve and build helpers for an MkDocs site in the current directory.
 ###############################################################################
 
 # @group: MkDocs
 # @keys: mkdocs,docs
 
-alias mkdocs-tailnet='mkdocs serve --dev-addr "$(tailscale ip -4):8000"'
+alias mkdocs-serve='mkdocs serve'
+alias mkdocs-build='mkdocs build --strict'
+alias mkdocs-lan='mkdocs serve --dev-addr 0.0.0.0:8000'
 
 # ===================================== EOF ====================================

@@ -3,14 +3,14 @@
 ## Add an alias to an existing group
 
 ```bash
-add-alias system brew-outdated 'brew outdated'
+add-alias system ducks 'du -sh *'
 list-aliases system
 ```
 
 Catch-all one-offs:
 
 ```bash
-add-alias other dfh 'df -h'
+add-alias other weather 'curl -fsS wttr.in'
 ```
 
 ## Create a new group
@@ -38,6 +38,15 @@ Session-only delete (group file unchanged):
 ```bash
 delete-alias dps --session
 ```
+
+## Point Homebrew Bundle at your Brewfile
+
+```bash
+# in ~/.bashrc, before sourcing ~/.bash_aliases
+export BREWFILE="$HOME/dotfiles/Brewfile"
+```
+
+Then `export-brew` / `import-brew` use that path.
 
 ## Document a parameterized alias
 
