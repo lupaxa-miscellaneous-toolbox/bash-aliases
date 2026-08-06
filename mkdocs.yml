@@ -12,8 +12,8 @@ site_author: The Lupaxa Project
 
 site_url: https://bash-aliases.thelupaxaproject.org/
 
-repo_name: lupaxa-developers-toolbox/bash-aliases
-repo_url: https://github.com/lupaxa-developers-toolbox/bash-aliases
+repo_name: lupaxa-workstation-toolbox/bash-aliases
+repo_url: https://github.com/lupaxa-workstation-toolbox/bash-aliases
 
 extra:
   generator: false
